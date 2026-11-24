@@ -103,7 +103,7 @@ app.innerHTML=`<div class=top><button class=link id=how>How to Play</button><but
 const pl=$('#pl');const draw=()=>{pl.innerHTML=S.players.map((p,i)=>`<div class=prow style="margin-bottom:8px"><input type=text maxlength=14 placeholder="Player ${i+1}" value="${esc(p)}" data-i=${i}><button class=x data-r=${i} aria-label="Remove">✕</button></div>`).join('');
 pl.querySelectorAll('input').forEach(e=>e.oninput=()=>{S.players[e.dataset.i]=e.value;save();chk()});
 pl.querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{S.players.splice(b.dataset.r,1);while(S.players.length<3)S.players.push('');save();draw();chk()});$('#add').disabled=S.players.length>=12};
-const names=()=>S.players.map(s=>s.trim()).filter(Boolean);
+const names=()=>S.players.map((s,i)=>s.trim()||"Player "+(i+1));
 const chk=()=>$('#go').disabled=names().length<3||!Object.values(S.cats).some(Boolean);
 draw();$('#add').onclick=()=>{S.players.push('');save();draw();pl.querySelectorAll('input')[S.players.length-1].focus()};
 $('#cats').innerHTML=[['fun','Fun'],['life','Life'],['spicy','Spicy']].map(([c,n])=>`<button class=chip data-c=${c} aria-pressed=${S.cats[c]}>${n}</button>`).join('');
@@ -119,7 +119,7 @@ $('#bk').onclick=home;$('#bk2').onclick=home}
 function settings(){app.innerHTML=`<div class=top><button class=link id=bk>← Back</button><span></span></div><h1>Settings</h1>
 <div class=panel><h2>Color theme</h2><div class=row>${THEMES.map(t=>`<button class=chip data-t=${t} aria-pressed=${S.theme===t}>${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></div>`;
 $('#bk').onclick=home;document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S.theme=b.dataset.t;save();applyTheme();settings()})}
-function start(){const players=S.players.map(s=>s.trim()).filter(Boolean);let pool=[];for(const c of Object.keys(S.cats))if(S.cats[c])pool=pool.concat(PROMPTS[c]);
+function start(){const players=S.players.map((s,i)=>s.trim()||"Player "+(i+1));let pool=[];for(const c of Object.keys(S.cats))if(S.cats[c])pool=pool.concat(PROMPTS[c]);
 pool=shuffle(pool).slice(0,Math.min(S.rounds,pool.length));
 G={players,pool,i:0,voter:0,vals:[],score:players.map(()=>0)};intro()}
 function scoreBar(){return `<div class=score>${G.players.map((p,i)=>`<span>${esc(p)} ${G.score[i]}</span>`).join('')}</div>`}
