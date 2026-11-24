@@ -33,7 +33,19 @@ h2{margin:0;font-size:15px;color:var(--dim);font-weight:600;text-transform:upper
 .chip{padding:9px 13px;border-radius:999px;background:var(--bg);border:1px solid var(--line);font-size:15px}
 .chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:var(--on);font-weight:600}
 .stage{flex:1;display:flex;flex-direction:column;justify-content:center;gap:16px;text-align:center}
-.stage.enter>*{animation:in 250ms var(--out)}
+.stage.enter>*{animation:in 320ms var(--out) both}
+.stage.enter>*:nth-child(2){animation-delay:70ms}.stage.enter>*:nth-child(3){animation-delay:140ms}.stage.enter>*:nth-child(4){animation-delay:210ms}
+.stage.enter .big{animation:pop 520ms cubic-bezier(.34,1.56,.64,1) 120ms both}
+@keyframes pop{from{opacity:0;transform:scale(.6)}to{opacity:1;transform:none}}
+@keyframes grow{from{width:0}}
+.bar i{animation:grow 650ms var(--out) both;animation-delay:calc(var(--d,0)*90ms + 250ms)}
+.names button{animation:in 300ms var(--out) both;animation-delay:calc(var(--d,0)*45ms)}
+.panel,.primary{animation:in 300ms var(--out) both}
+.tog{display:flex;justify-content:space-between;align-items:center;gap:12px;background:var(--bg);border:1px solid var(--line);padding:14px;border-radius:12px;cursor:pointer;transition:transform 150ms var(--out)}
+.tog:active{transform:scale(.98)}
+.tog input{width:24px;height:24px;margin:0;flex:none;accent-color:var(--accent);cursor:pointer}
+input[type=range]{width:100%;accent-color:var(--accent);padding:0;border:0;background:none}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
 @keyframes in{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 .lead{font-size:27px;font-weight:700;line-height:1.2}
 .big{font-size:42px;font-weight:800;color:var(--gold);line-height:1.1}
@@ -60,6 +72,12 @@ h2{margin:0;font-size:15px;color:var(--dim);font-weight:600;text-transform:upper
 .wheel ul::-webkit-scrollbar{display:none}
 .wheel li{height:44px;line-height:44px;text-align:center;font-size:22px;color:var(--dim);scroll-snap-align:center;scroll-snap-stop:always;cursor:pointer;transition:color .15s,font-size .15s}
 .wheel li.sel{color:var(--text);font-weight:800;font-size:28px}
+.dot{position:absolute;transform:translateX(-50%);text-align:center;font-size:12px;white-space:nowrap}
+.dot i{display:block;width:16px;height:16px;margin:4px auto 0;border-radius:50%;background:var(--accent);animation:pop 480ms cubic-bezier(.34,1.56,.64,1) both;animation-delay:calc(var(--d,0)*110ms + 250ms)}
+.dot span{animation:in 300ms var(--out) both;animation-delay:calc(var(--d,0)*110ms + 400ms)}
+.avg{animation:grow2 500ms var(--out) both 150ms;transform-origin:top}
+@keyframes grow2{from{transform:scaleY(0)}}
+#lv{transition:color .15s}
 .how{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:10px}
 .how li{animation:in 300ms var(--out) both;animation-delay:calc(var(--i)*60ms)}
 </style></head>
@@ -72,9 +90,24 @@ life:["College is worth the money","Remote work beats the office","Everyone shou
 spicy:["It's fine to date a friend's ex","Splitting the bill evenly is unfair","Weddings are a waste of money","Honesty is always the best policy","White lies are fine","It's okay to check your partner's phone","Jealousy means you care","Love at first sight is real","Long-distance relationships work","People never really change","Cheating once is a dealbreaker","You should marry your best friend","Money matters more than looks","Dating apps are better than meeting in person","A first kiss should happen on the first date","It's fine to ask someone out over text","Sharing a bed is better than separate rooms","Being single is better than a bad relationship","Pre-nups are a smart idea","You should be friends with your coworkers","It's okay to cancel plans last-minute","Revenge is justified sometimes","It's fine to read someone's diary if you're worried","Celebrities deserve privacy","It's rude to talk about your salary"]};
 const END=['Strongly disagree','Strongly agree'];
 const THEMES=['default','ocean','forest','sunset','grape','mono','light'];
-const def={players:['','',''],cats:{fun:true,life:true,spicy:true},theme:'default',rounds:12,mode:'avg'};
+const def={players:['','',''],cats:{fun:true,life:true,spicy:true},theme:'default',rounds:12,mode:'avg',sound:true,vibe:true,vol:.6};
 let S;try{S=Object.assign({},def,JSON.parse(localStorage.getItem(KEY)||'{}'))}catch(e){S=Object.assign({},def)}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
+let ac;
+function ensureAudio(){try{ac=ac||new(window.AudioContext||window.webkitAudioContext)();ac.resume()}catch(e){}}
+function tone(f,d,{type='sine',vol=1,slide=0,delay=0}={}){if(!S.sound||!ac)return;const t=ac.currentTime+delay,o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(slide)o.frequency.exponentialRampToValueAtTime(slide,t+d);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol*S.vol*.35,t+.01);g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(ac.destination);o.start(t);o.stop(t+d+.02)}
+function noise(d,f0,f1,vol=1,delay=0){if(!S.sound||!ac)return;const t=ac.currentTime+delay,n=ac.sampleRate*d|0,buf=ac.createBuffer(1,n,ac.sampleRate),x=buf.getChannelData(0);for(let i=0;i<n;i++)x[i]=Math.random()*2-1;const src=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();src.buffer=buf;fl.type='bandpass';fl.Q.value=1.2;fl.frequency.setValueAtTime(f0,t);fl.frequency.exponentialRampToValueAtTime(f1,t+d);g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol*S.vol*.35,t+d*.6);g.gain.exponentialRampToValueAtTime(.0001,t+d);src.connect(fl);fl.connect(g);g.connect(ac.destination);src.start(t)}
+const bell=(f,delay=0,len=1)=>{tone(f,.9*len,{vol:.8,delay});tone(f*2.76,.5*len,{vol:.22,delay})};
+let tapT;const named=fn=>(...a)=>{clearTimeout(tapT);fn(...a)};
+const sfx={tap:()=>tone(1200,.04,{vol:.5}),tick:()=>tone(900,.03,{type:'square',vol:.3}),
+vote:named(()=>[523.25,659.25,783.99].forEach((f,i)=>tone(f,.25,{vol:.7,delay:i*.08}))),
+dot:(i)=>tone(600+i*90,.12,{vol:.5,delay:.25+i*.11}),
+pass:named(()=>{noise(.25,400,2600,1.4);bell(659.25,.16)}),
+reveal:named(()=>{noise(.3,300,3000,2.2);bell(880,.22)}),
+win:named(()=>[523.25,659.25,783.99,1046.5].forEach((f,i)=>bell(f,i*.09,.8))),
+start:named(()=>{bell(784,0,.8);bell(988,.12,.8)})};
+function buzz(p){try{if(S.vibe&&navigator.vibrate)navigator.vibrate(p)}catch(e){}}
+document.addEventListener('click',e=>{if(e.target.closest('button,input[type=checkbox]')){ensureAudio();tapT=setTimeout(sfx.tap,0)}},true);
 const $=s=>document.querySelector(s);const app=$('#app');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
@@ -88,7 +121,7 @@ function wheel(el,vals,cur,fn){el.innerHTML='<ul tabindex=0 aria-label="Number o
 const ul=el.firstChild,H=44;let idx=Math.max(0,vals.indexOf(cur));
 const mark=()=>[...ul.children].forEach((li,i)=>li.classList.toggle('sel',i===idx));
 ul.scrollTop=idx*H;mark();
-ul.onscroll=()=>{const i=Math.max(0,Math.min(vals.length-1,Math.round(ul.scrollTop/H)));if(i!==idx){idx=i;mark();try{navigator.vibrate&&navigator.vibrate(8)}catch(e){}fn(vals[i])}};
+ul.onscroll=()=>{const i=Math.max(0,Math.min(vals.length-1,Math.round(ul.scrollTop/H)));if(i!==idx){idx=i;mark();sfx.tick();buzz(8);fn(vals[i])}};
 ul.onclick=e=>{const li=e.target.closest('li');if(li)ul.scrollTo({top:[...ul.children].indexOf(li)*H,behavior:'smooth'})};
 ul.onkeydown=e=>{const d=e.key==='ArrowDown'?1:e.key==='ArrowUp'?-1:0;if(d){e.preventDefault();ul.scrollTo({top:Math.max(0,Math.min(vals.length-1,idx+d))*H,behavior:'smooth'})}}}
 let G=null;
@@ -117,23 +150,25 @@ function howto(){app.innerHTML=`<div class=top><button class=link id=bk>← Back
 <div class=panel><ol class=how>${["Add 3 to 12 players and pick your take types, number of rounds and who scores.","Each round, a hot take appears. Read it out loud.","Pass the phone around. Each player slides from strongly disagree to strongly agree, in secret, then locks it in.","The reveal shows everyone's spot on the line and the group average.","Closest to the average is the most mainstream. Furthest from it has the hottest take.","Points go to the closest, the furthest, or both, depending on your setting.","Most points after all the rounds wins."].map((x,i)=>`<li style="--i:${i}">${x}</li>`).join('')}</ol></div><button class=primary id=bk2>Got it</button>`;
 $('#bk').onclick=home;$('#bk2').onclick=home}
 function settings(){app.innerHTML=`<div class=top><button class=link id=bk>← Back</button><span></span></div><h1>Settings</h1>
-<div class=panel><h2>Color theme</h2><div class=row>${THEMES.map(t=>`<button class=chip data-t=${t} aria-pressed=${S.theme===t}>${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></div>`;
+<div class=panel><h2>Color theme</h2><div class=row>${THEMES.map(t=>`<button class=chip data-t=${t} aria-pressed=${S.theme===t}>${t[0].toUpperCase()+t.slice(1)}</button>`).join('')}</div></div>
+<div class=panel><h2>Feedback</h2><label class=tog><span>Sound effects</span><input type=checkbox id=snd ${S.sound?'checked':''}></label><label class=tog><span>Vibration (Android only)</span><input type=checkbox id=vib ${S.vibe?'checked':''}></label><h2>Volume</h2><input type=range id=vol min=.1 max=1 step=.05 value=${S.vol} aria-label=Volume></div>`;
+$('#snd').onchange=e=>{S.sound=e.target.checked;save();ensureAudio();sfx.tick()};$('#vib').onchange=e=>{S.vibe=e.target.checked;save();buzz(20)};$('#vol').oninput=e=>{S.vol=+e.target.value};$('#vol').onchange=()=>{save();ensureAudio();sfx.tick()};
 $('#bk').onclick=home;document.querySelectorAll('[data-t]').forEach(b=>b.onclick=()=>{S.theme=b.dataset.t;save();applyTheme();settings()})}
-function start(){const players=S.players.map((s,i)=>s.trim()||"Player "+(i+1));let pool=[];for(const c of Object.keys(S.cats))if(S.cats[c])pool=pool.concat(PROMPTS[c]);
+function start(){ensureAudio();sfx.start();buzz(15);const players=S.players.map((s,i)=>s.trim()||"Player "+(i+1));let pool=[];for(const c of Object.keys(S.cats))if(S.cats[c])pool=pool.concat(PROMPTS[c]);
 pool=shuffle(pool).slice(0,Math.min(S.rounds,pool.length));
 G={players,pool,i:0,voter:0,vals:[],score:players.map(()=>0)};intro()}
 function scoreBar(){return `<div class=score>${G.players.map((p,i)=>`<span>${esc(p)} ${G.score[i]}</span>`).join('')}</div>`}
 function topBar(){return `<div class=top><span class=dim>Take ${G.i+1} / ${G.pool.length}</span><button class=link id=quit>End game</button></div>`}
 function hookQuit(){const q=$('#quit');if(q)q.onclick=()=>{if(confirm('End the game?'))final()}}
 function intro(){G.voter=0;G.vals=[];
-app.innerHTML=`${topBar()}<div class="stage enter"><div class=dim>Hot take</div><div class=lead>"${esc(G.pool[G.i])}"</div><p class=dim>Pass the phone. Everyone slides in secret, from ${END[0].toLowerCase()} to ${END[1].toLowerCase()}.</p></div><button class=primary id=nx>Start sliding</button>${scoreBar()}`;hookQuit();$('#nx').onclick=slide}
+app.innerHTML=`${topBar()}<div class="stage enter"><div class=dim>Hot take</div><div class=lead>"${esc(G.pool[G.i])}"</div><p class=dim>Pass the phone. Everyone slides in secret, from ${END[0].toLowerCase()} to ${END[1].toLowerCase()}.</p></div><button class=primary id=nx>Start sliding</button>${scoreBar()}`;hookQuit();$('#nx').onclick=()=>{sfx.pass();buzz(12);slide()}}
 function slide(){const p=G.players[G.voter];
 app.innerHTML=`${topBar()}<div class="stage enter"><div class=dim>${esc(p)}, where do you stand?</div><div class=lead>"${esc(G.pool[G.i])}"</div>
-<div class=panel><input type=range id=sl min=0 max=100 value=50 style="width:100%;height:40px;accent-color:var(--accent)" aria-label="Agree level"><div class=top><span class=dim>${END[0]}</span><span class=dim>${END[1]}</span></div><div id=lv style="font-weight:700;font-size:20px">Neutral</div></div></div>
+<div class=panel><input type=range id=sl min=0 max=100 value=50 style="width:100%;height:40px;accent-color:var(--accent)" aria-label="Agree level"><div class=top><span class=dim>${END[0]}</span><span class=dim>${END[1]}</span></div><div id=lv style="font-weight:700;font-size:20px;min-height:28px">Neutral</div></div></div>
 <button class=primary id=ok>Lock it in</button><p class=dim style="text-align:center">Player ${G.voter+1} of ${G.players.length}</p>`;hookQuit();
-const sl=$('#sl');sl.oninput=()=>$('#lv').textContent=label(+sl.value);
-$('#ok').onclick=()=>{G.vals.push(+sl.value);G.voter++;G.voter<G.players.length?handoff():reveal()}}
-function handoff(){app.innerHTML=`${topBar()}<div class="stage enter"><div class=dim>Take locked in. Pass the phone to</div><div class=big>${esc(G.players[G.voter])}</div></div><button class=primary id=nx>I'm ${esc(G.players[G.voter])}, show me</button>`;hookQuit();$('#nx').onclick=slide}
+let last=50,lastL=label(50);const sl=$('#sl');sl.oninput=()=>{const v=+sl.value,L=label(v);$('#lv').textContent=L;if(Math.abs(v-last)>=5){last=v;sfx.tick();buzz(6)}if(L!==lastL){lastL=L;sfx.tap();buzz(14)}};
+$('#ok').onclick=()=>{sfx.vote();buzz([10,30,10]);G.vals.push(+sl.value);G.voter++;G.voter<G.players.length?handoff():reveal()}}
+function handoff(){app.innerHTML=`${topBar()}<div class="stage enter"><div class=dim>Take locked in. Pass the phone to</div><div class=big>${esc(G.players[G.voter])}</div></div><button class=primary id=nx>I'm ${esc(G.players[G.voter])}, show me</button>`;hookQuit();$('#nx').onclick=()=>{sfx.pass();buzz(12);slide()}}
 function reveal(){const j=judge(G.vals);const gc=S.mode!=='hot',gh=S.mode!=='avg';
 if(gc)j.close.forEach(i=>G.score[i]++);if(gh)j.far.forEach(i=>G.score[i]++);
 const nm=a=>a.map(i=>esc(G.players[i])).join(' & ');
@@ -144,17 +179,17 @@ const H=Math.max(...pos.map(p=>p.l))*26+34;
 app.innerHTML=`${topBar()}<div class="stage enter"><div class=dim>"${esc(G.pool[G.i])}"</div>
 <div class=panel><div style="position:relative;height:${H+30}px;margin:8px 8px 0">
 <div style="position:absolute;left:0;right:0;top:12px;height:6px;border-radius:3px;background:var(--line)"></div>
-<div style="position:absolute;left:${j.mean}%;top:0;width:3px;height:${H+24}px;background:var(--gold);border-radius:2px" title="Group average"></div>
-${pos.map(p=>`<div style="position:absolute;left:${p.v}%;top:${p.l*26}px;transform:translateX(-50%);text-align:center;font-size:12px;white-space:nowrap"><div style="width:16px;height:16px;margin:4px auto 0;border-radius:50%;background:var(--accent)"></div>${esc(G.players[p.i])}</div>`).join('')}
+<div class=avg style="position:absolute;left:${j.mean}%;top:0;width:3px;height:${H+24}px;background:var(--gold);border-radius:2px" title="Group average"></div>
+${pos.map((p,k)=>`<div class=dot style="left:${p.v}%;top:${p.l*26}px;--d:${k}"><i></i><span>${esc(G.players[p.i])}</span></div>`).join('')}
 </div><div class=top><span class=dim>${END[0]}</span><span class=dim style="color:var(--gold)">| group average</span><span class=dim>${END[1]}</span></div></div>
 <div>${gc?`<div class=verdict style="color:var(--ok);font-weight:700">🎯 Most mainstream: ${nm(j.close)}</div>`:''}${gh&&j.far.length?`<div style="color:var(--accent);font-weight:700">🔥 Hottest take: ${nm(j.far)}</div>`:''}</div></div>
-<button class=primary id=nx>${G.i+1<G.pool.length?'Next take':'Final results'}</button>${scoreBar()}`;hookQuit();
+<button class=primary id=nx>${G.i+1<G.pool.length?'Next take':'Final results'}</button>${scoreBar()}`;hookQuit();sfx.reveal();buzz([20,40,40]);pos.forEach((_,k)=>sfx.dot(k));
 $('#nx').onclick=()=>{if(G.i+1<G.pool.length){G.i++;intro()}else final()}}
 function final(){const m=Math.max(...G.score);const order=G.score.map((n,i)=>i).sort((a,b)=>G.score[b]-G.score[a]);const w=G.score.map((n,i)=>n===m&&m>0?i:-1).filter(i=>i>=0);
 app.innerHTML=`<h1>Game over</h1><div class="stage enter"><div class=dim>Winner</div><div class=big>${w.length?w.map(i=>esc(G.players[i])).join(' & '):'Nobody!'}</div>
-<div class=panel>${order.map(i=>`<div class="bar ${w.includes(i)?'win':''}"><span>${esc(G.players[i])}</span><i style="width:${m?G.score[i]/m*100:0}%"></i><b>${G.score[i]}</b></div>`).join('')}</div></div>
+<div class=panel>${order.map(i=>`<div class="bar ${w.includes(i)?'win':''}"><span>${esc(G.players[i])}</span><i style="width:${m?G.score[i]/m*100:0}%;--d:${order.indexOf(i)}"></i><b>${G.score[i]}</b></div>`).join('')}</div></div>
 <button class=primary id=ag>Play again</button><button id=hm>Home</button>`;
-$('#ag').onclick=start;$('#hm').onclick=home}
+sfx.win();buzz([30,50,30,50,80]);$('#ag').onclick=start;$('#hm').onclick=home}
 home();
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 
